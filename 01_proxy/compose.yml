@@ -1,0 +1,60 @@
+name: proxy
+
+services:
+    traefik:
+        extends:
+            file: ../00_templates/service.yml
+            service: proxy
+        image: traefik:v3
+        ports:
+            - 80:80
+            - 443:443
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            - data:/certificates
+        command:
+            # Enable Traefik management dashboard and healthcheck endpoint
+            - --api=true
+            - --ping=true
+            # Configure log format and verbosity
+            - --log.format=json
+            - --log.level=INFO
+            - --accesslog=true
+            - --accesslog.format=json
+            # Enable metrics
+            - --metrics.prometheus=true
+            # Configure docker provider
+            - --providers.docker=true
+            - --providers.docker.exposedbydefault=false
+            - --providers.docker.network=proxy
+            # Configure default entrypoints
+            - --entrypoints.web.address=:80
+            - --entrypoints.websecure.address=:443
+            - --entrypoints.websecure.http.tls.certresolver=letsencrypt
+            # Configure ACME provider and challenge
+            - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
+            - --certificatesresolvers.letsencrypt.acme.storage=/certificates/acme.json
+            - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+            - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+            - --certificatesresolvers.tailscale.tailscale=true
+        healthcheck:
+            test:
+                - CMD
+                - traefik
+                - healthcheck
+                - --ping
+            interval: 10s
+            start_period: 5s
+            retries: 3
+            timeout: 5s
+        labels:
+            traefik.http.routers.proxy-https.service: api@internal
+            traefik.http.middlewares.https-redirect.redirectscheme.scheme: https
+            traefik.http.middlewares.https-redirect.redirectscheme.permanent: true
+            traefik.http.middlewares.private-access.ipwhitelist.sourcerange: 100.64.0.0/10
+
+volumes:
+    data: {}
+
+include:
+    - ../00_templates/networks.yml

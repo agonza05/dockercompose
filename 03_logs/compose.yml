@@ -1,0 +1,13 @@
+name: logs
+
+services:
+    dozzle:
+        extends:
+            file: ../00_templates/service.yml
+            service: proxy
+        image: amir20/dozzle:latest
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+
+include:
+    - ../00_templates/networks.yml

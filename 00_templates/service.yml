@@ -1,0 +1,56 @@
+services:
+    default:
+        env_file:
+            - ${PWD}/.env.container
+        restart: unless-stopped
+        cpus: 0.5
+        mem_limit: 512m
+        labels:
+            # Logging configuration
+            logging: promtail
+            logging_jobname: containerlogs
+            stackname: docker-stack-${COMPOSE_PROJECT_NAME}
+            dev.dozzle.group: ${COMPOSE_PROJECT_NAME}
+        logging:
+            driver: json-file
+            options:
+                max-size: "1m"
+                max-file: "1"
+                tag: "{{.Name}}"
+
+    proxy:
+        extends:
+            service: default
+        networks:
+            - proxy
+        labels:
+            # Traefik configuration
+            - traefik.enable=true
+            - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}-auth.basicauth.users=${USERNAME}:${HASHED_PASSWORD}
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-acme.entrypoints=web
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-acme.rule=Host(`${COMPOSE_PROJECT_NAME}.${BASE_DOMAIN}`) && PathPrefix(`/.well-known/acme-challenge`)
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-http.entrypoints=web
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-http.rule=Host(`${COMPOSE_PROJECT_NAME}.${BASE_DOMAIN}`)
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-http.middlewares=https-redirect
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.entrypoints=websecure
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.rule=Host(`${COMPOSE_PROJECT_NAME}.${BASE_DOMAIN}`)
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.tls=true
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.tls.certresolver=letsencrypt
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.middlewares=${COMPOSE_PROJECT_NAME}-auth
+
+    tsproxy:
+        extends:
+            service: default
+        networks:
+            - proxy
+        labels:
+            # Traefik configuration
+            - traefik.enable=true
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-http.entrypoints=web
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-http.rule=Host(`${COMPOSE_PROJECT_NAME}.${TAILNET_DOMAIN}`)
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-http.middlewares=https-redirect
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.entrypoints=websecure
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.rule=Host(`${COMPOSE_PROJECT_NAME}.${TAILNET_DOMAIN}`)
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.tls=true
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.tls.certresolver=tailscale
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.middlewares=${COMPOSE_PROJECT_NAME}-auth
