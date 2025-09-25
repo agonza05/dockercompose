@@ -6,16 +6,9 @@ services:
             file: ../00_templates/service.yml
             service: proxy
         image: traefik/whoami
+        cpus: "0.25"
         command:
             - --name=who-am-i
-        # healthcheck:
-        #     test:
-        #         - CMD
-        #         - curl -f http://localhost:80/health
-        #     interval: 10s
-        #     start_period: 5s
-        #     retries: 3
-        #     timeout: 5s
 
 include:
     - ../00_templates/networks.yml

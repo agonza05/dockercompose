@@ -6,11 +6,19 @@ Docker compose templates
 - User:
 
 ```
-useradd -rMs /usr/sbin/nologin --groups sudo dockersa
+useradd -rMs /usr/sbin/nologin --groups sudo,docker dockersa
 ```
 
 - Alias:
 
 ```
-alias dply='sudo -u dockersa docker compose --env-file ../.env.global --env-file .env.compose up -d'
+alias ddply='sudo -u dockersa docker compose --env-file ../.env.global --env-file .env.compose up -d'
+```
+
+- Variables:
+
+```
+mv .env.global.sample .env.global
+mv <service_folder>/.env.compose.sample <service_folder>/.env.compose
+mv <service_folder>/.env.container.sample <service_folder>/.env.container
 ```
