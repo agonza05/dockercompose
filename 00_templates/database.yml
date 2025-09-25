@@ -1,0 +1,23 @@
+services:
+    database:
+        extends:
+            file: ../00_templates/service.yml
+            service: private
+        image: postgres:${POSTGRES_VERSION:-17.6}-alpine
+        volumes:
+            - database:/var/lib/postgresql/data
+        environment:
+            POSTGRES_DB: ${DB_NAME:-${COMPOSE_PROJECT_NAME}}
+            POSTGRES_PASSWORD: ${DB_PASSWORD:?Database password required}
+            POSTGRES_USER: ${DB_USER:-${COMPOSE_PROJECT_NAME}}
+        healthcheck:
+            test:
+                - CMD-SHELL
+                - pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}
+            interval: 10s
+            start_period: 5s
+            retries: 3
+            timeout: 5s
+
+volumes:
+    database: {}

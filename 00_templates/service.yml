@@ -1,12 +1,11 @@
 services:
     common:
-        env_file:
-            - ${PWD}/.env.container
         restart: unless-stopped
         cpus: 0.5
         mem_limit: 512m
+        environment:
+            TZ: Etc/UTC
         labels:
-            # Logging configuration
             dev.dozzle.group: ${COMPOSE_PROJECT_NAME}
         logging:
             driver: json-file
@@ -21,15 +20,25 @@ services:
         networks:
             - private
 
-    proxy:
+    public:
         extends:
             service: common
         networks:
             - public
         labels:
-            # Traefik configuration
             - traefik.enable=true
-            - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}-auth.basicauth.users=${USERNAME}:${HASHED_PASSWORD}
-            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.entrypoints=websecure
+            # - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.entrypoints=websecure
             - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.rule=Host(`${COMPOSE_PROJECT_NAME}.${BASE_DOMAIN}`)
+
+    public-with-auth:
+        extends:
+            service: public
+        labels:
+            - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}-auth.basicauth.users=${USERNAME}:${HASHED_PASSWORD}
             - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.middlewares=${COMPOSE_PROJECT_NAME}-auth
+
+    public-and-private:
+        extends:
+            service: public
+        networks:
+            - private

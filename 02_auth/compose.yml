@@ -1,5 +1,56 @@
-name: traefik
+name: auth
 
 services:
-    traefik:
-        image: traefik:v3
+    authentik:
+        extends:
+            file: ../00_templates/service.yml
+            service: public-and-private
+        command: server
+        cpus: "1"
+        mem_limit: 1024m
+        depends_on:
+            database:
+                condition: service_healthy
+            cache:
+                condition: service_healthy
+        image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION:-2025.8}
+        environment:
+            AUTHENTIK_POSTGRESQL__HOST: database
+            AUTHENTIK_POSTGRESQL__NAME: ${DB_NAME:-${COMPOSE_PROJECT_NAME}}
+            AUTHENTIK_POSTGRESQL__PASSWORD: ${DB_PASSWORD:?Database password required}
+            AUTHENTIK_POSTGRESQL__USER: ${DB_USER:-${COMPOSE_PROJECT_NAME}}
+            AUTHENTIK_REDIS__HOST: cache
+            AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?Secret key required}
+        expose:
+            - "9000"
+            - "9443"
+
+    worker:
+        extends:
+            file: ../00_templates/service.yml
+            service: private
+        command: worker
+        depends_on:
+            database:
+                condition: service_healthy
+            cache:
+                condition: service_healthy
+        image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION:-2025.8}
+        environment:
+            AUTHENTIK_POSTGRESQL__HOST: database
+            AUTHENTIK_POSTGRESQL__NAME: ${DB_NAME:-${COMPOSE_PROJECT_NAME}}
+            AUTHENTIK_POSTGRESQL__PASSWORD: ${DB_PASSWORD:?Database password required}
+            AUTHENTIK_POSTGRESQL__USER: ${DB_USER:-${COMPOSE_PROJECT_NAME}}
+            AUTHENTIK_REDIS__HOST: cache
+            AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?Secret key required}
+        user: root
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+    data: {}
+
+include:
+    - ../00_templates/networks.yml
+    - ../00_templates/database.yml
+    - ../00_templates/cache.yml

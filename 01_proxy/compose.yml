@@ -4,7 +4,7 @@ services:
     traefik:
         extends:
             file: ../00_templates/service.yml
-            service: proxy
+            service: public-with-auth
         image: traefik:v3
         ports:
             - 80:80

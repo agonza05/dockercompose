@@ -1,0 +1,19 @@
+services:
+    cache:
+        extends:
+            file: ../00_templates/service.yml
+            service: private
+        image: redis:${REDIS_VERSION:-8.2.1}-alpine
+        volumes:
+            - cache:/data
+        healthcheck:
+            test:
+                - CMD-SHELL
+                - redis-cli ping | grep PONG
+            interval: 10s
+            start_period: 5s
+            retries: 3
+            timeout: 5s
+
+volumes:
+    cache: {}
