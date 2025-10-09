@@ -4,7 +4,7 @@ services:
     dozzle:
         extends:
             file: ../00_templates/service.yml
-            service: public-with-auth
+            service: public-with-oidc
         image: amir20/dozzle:latest
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock

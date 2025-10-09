@@ -1,4 +1,5 @@
 .env
+.env.global
 !.env.sample
 **/.env
 !**/.env.sample

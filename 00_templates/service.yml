@@ -37,6 +37,12 @@ services:
             - traefik.http.middlewares.${COMPOSE_PROJECT_NAME}-auth.basicauth.users=${USERNAME}:${HASHED_PASSWORD}
             - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.middlewares=${COMPOSE_PROJECT_NAME}-auth
 
+    public-with-oidc:
+        extends:
+            service: public
+        labels:
+            - traefik.http.routers.${COMPOSE_PROJECT_NAME}-https.middlewares=oidc-auth
+
     public-and-private:
         extends:
             service: public

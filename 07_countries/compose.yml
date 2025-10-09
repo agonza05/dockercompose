@@ -1,0 +1,23 @@
+name: countries
+
+services:
+    # https://github.com/pfalcon/visited_places
+    pfalcon:
+        extends:
+            file: ../00_templates/service.yml
+            service: public-with-oidc
+        image: busybox:latest
+        cpus: "0.25"
+        expose:
+            - 3000
+        volumes:
+            - ${PWD}/app/index.html:/app/index.html:ro
+            - ${PWD}/app/script.js:/app/script.js:ro
+            - ${PWD}/app/styles.css:/app/styles.css:ro
+            - ${PWD}/app/world-110m.json:/app/world-110m.json:ro
+            - ${PWD}/app/data:/app/data:ro
+            - ${PWD}/app/util:/app/util:ro
+        command: ["busybox", "httpd", "-h", "/app", "-f", "-v", "-p", "3000"]
+
+include:
+    - ../00_templates/networks.yml

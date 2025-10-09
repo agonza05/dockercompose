@@ -1,0 +1,30 @@
+name: budget
+
+services:
+    actual:
+        extends:
+            file: ../00_templates/service.yml
+            service: public
+        image: actualbudget/actual-server:latest
+        environment:
+            ACTUAL_OPENID_DISCOVERY_URL: https://auth.${BASE_DOMAIN}
+            ACTUAL_OPENID_CLIENT_ID: ${OPENID_CLIENT_ID}
+            ACTUAL_OPENID_CLIENT_SECRET: ${OPENID_CLIENT_SECRET}
+            ACTUAL_OPENID_SERVER_HOSTNAME: https://${COMPOSE_PROJECT_NAME}.${BASE_DOMAIN}
+            ACTUAL_LOGIN_METHOD: openid
+            ACTUAL_ALLOWED_LOGIN_METHODS: openid
+        volumes:
+            - data:/data
+        healthcheck:
+            # Enable health check for the instance
+            test: ["CMD-SHELL", "node src/scripts/health-check.js"]
+            interval: 60s
+            timeout: 10s
+            retries: 3
+            start_period: 20s
+
+volumes:
+    data: {}
+
+include:
+    - ../00_templates/networks.yml

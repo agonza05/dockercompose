@@ -1,56 +1,41 @@
 name: auth
 
 services:
-    authentik:
+    pocketid:
         extends:
             file: ../00_templates/service.yml
-            service: public-and-private
-        command: server
-        cpus: "1"
-        mem_limit: 1024m
-        depends_on:
-            database:
-                condition: service_healthy
-            cache:
-                condition: service_healthy
-        image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION:-2025.8}
+            service: public
+        image: ghcr.io/pocket-id/pocket-id:v1
         environment:
-            AUTHENTIK_POSTGRESQL__HOST: database
-            AUTHENTIK_POSTGRESQL__NAME: ${DB_NAME:-${COMPOSE_PROJECT_NAME}}
-            AUTHENTIK_POSTGRESQL__PASSWORD: ${DB_PASSWORD:?Database password required}
-            AUTHENTIK_POSTGRESQL__USER: ${DB_USER:-${COMPOSE_PROJECT_NAME}}
-            AUTHENTIK_REDIS__HOST: cache
-            AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?Secret key required}
+            APP_URL: https://${COMPOSE_PROJECT_NAME}.${BASE_DOMAIN}
+            TRUST_PROXY: true
+            PUID: 1000
+            PGID: 1000
+            ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+            ANALYTICS_DISABLED: true
+            UI_CONFIG_DISABLED: true
+            APP_NAME: GonCas ID
+            ALLOW_USER_SIGNUPS: withToken
         expose:
-            - "9000"
-            - "9443"
-
-    worker:
-        extends:
-            file: ../00_templates/service.yml
-            service: private
-        command: worker
-        depends_on:
-            database:
-                condition: service_healthy
-            cache:
-                condition: service_healthy
-        image: ghcr.io/goauthentik/server:${AUTHENTIK_VERSION:-2025.8}
-        environment:
-            AUTHENTIK_POSTGRESQL__HOST: database
-            AUTHENTIK_POSTGRESQL__NAME: ${DB_NAME:-${COMPOSE_PROJECT_NAME}}
-            AUTHENTIK_POSTGRESQL__PASSWORD: ${DB_PASSWORD:?Database password required}
-            AUTHENTIK_POSTGRESQL__USER: ${DB_USER:-${COMPOSE_PROJECT_NAME}}
-            AUTHENTIK_REDIS__HOST: cache
-            AUTHENTIK_SECRET_KEY: ${AUTHENTIK_SECRET_KEY:?Secret key required}
-        user: root
+            - 1411
         volumes:
-            - /var/run/docker.sock:/var/run/docker.sock
+            - data:/app/data
+        # Optional healthcheck
+        healthcheck:
+            test: ["CMD", "/app/pocket-id", "healthcheck"]
+            interval: 1m30s
+            timeout: 5s
+            retries: 2
+            start_period: 10s
+        labels:
+            traefik.http.middlewares.oidc-auth.plugin.traefik-oidc-auth.secret: ${OIDC_SECRET}
+            traefik.http.middlewares.oidc-auth.plugin.traefik-oidc-auth.scopes: openid,profile,email
+            traefik.http.middlewares.oidc-auth.plugin.traefik-oidc-auth.provider.Url: https://${COMPOSE_PROJECT_NAME}.${BASE_DOMAIN}
+            traefik.http.middlewares.oidc-auth.plugin.traefik-oidc-auth.provider.ClientID: ${OIDC_CLIENT_ID}
+            traefik.http.middlewares.oidc-auth.plugin.traefik-oidc-auth.provider.ClientSecret: ${OIDC_CLIENT_SECRET}
 
 volumes:
     data: {}
 
 include:
     - ../00_templates/networks.yml
-    - ../00_templates/database.yml
-    - ../00_templates/cache.yml

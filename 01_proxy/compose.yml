@@ -4,7 +4,7 @@ services:
     traefik:
         extends:
             file: ../00_templates/service.yml
-            service: public-with-auth
+            service: public-with-oidc
         image: traefik:v3
         ports:
             - 80:80
@@ -18,11 +18,11 @@ services:
             - --ping=true
             # Configure log format and verbosity
             - --log.format=json
-            - --log.level=INFO
-            - --accesslog=true
+            # - --log.level=INFO
+            - --accesslog=false
             - --accesslog.format=json
             # Enable metrics
-            - --metrics.prometheus=true
+            # - --metrics.prometheus=true
             # Configure docker provider
             - --providers.docker=true
             - --providers.docker.exposedbydefault=false
@@ -38,6 +38,9 @@ services:
             - --certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL}
             - --certificatesresolvers.letsencrypt.acme.storage=/certificates/acme.json
             - --certificatesresolvers.letsencrypt.acme.tlschallenge=true
+            # OIDC plugin
+            - --experimental.plugins.traefik-oidc-auth.modulename=github.com/sevensolutions/traefik-oidc-auth
+            - --experimental.plugins.traefik-oidc-auth.version=v0.16.0
         healthcheck:
             test:
                 - CMD

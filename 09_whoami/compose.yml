@@ -4,7 +4,7 @@ services:
     whoami:
         extends:
             file: ../00_templates/service.yml
-            service: public-with-auth
+            service: public-with-oidc
         image: traefik/whoami
         cpus: "0.25"
         command:
